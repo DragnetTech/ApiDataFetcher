@@ -1,0 +1,3 @@
+is_global = true
+build_property.RootNamespace = SigParserApi
+build_property.ProjectDir = C:\Users\Austin\Desktop\ApiDataFetcher\sigparser-api\

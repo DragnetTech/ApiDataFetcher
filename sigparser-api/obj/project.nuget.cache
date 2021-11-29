@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "J6Kdz6/PSI48q8YNCZgvnsGQO9RFFK37zbnd0B2TYHAX+nEIROZj6kiq7LFMVYM6TkAiqA33TeLeFf4mzZCt7A==",
+  "success": true,
+  "projectFilePath": "C:\\Users\\Austin\\Desktop\\ApiDataFetcher\\sigparser-api\\sigparser-api.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Austin\\.nuget\\packages\\commandlineparser\\2.8.0\\commandlineparser.2.8.0.nupkg.sha512",
+    "C:\\Users\\Austin\\.nuget\\packages\\restsharp\\106.13.0\\restsharp.106.13.0.nupkg.sha512"
+  ],
+  "logs": []
+}
