@@ -5,50 +5,71 @@ using System.Threading.Tasks;
 using System.Security.Cryptography;
 using CommandLine;
 using RestSharp;
+using SigParserApi.Formatters;
 
 namespace SigParserApi.Verbs
 {
     [Verb("fetch-contacts", HelpText = "Fetches contacts from the sigparser api.")]
     public class FetchContactsOptions
     {   
-        [Option("output")]
+        [Option("output", Required = true, HelpText = "This is the name of the output file.")]
         public string Output { get; set; }
         
         [Option("apikey", Required = false)]
         public string? ApiKey { get; set; }
+
+        [Option("formatter", Required = false, Default = "jsonArray", HelpText = "Configure the output format. Options: jsonArray, jsonLines")]
+        public string Formatter { get; set; } = "jsonArray";
     }
 
     public class FetchContacts
     {
         private FetchContactsOptions _options;
-        public FetchContacts(FetchContactsOptions options)
+        private IFormatter _formatter;
+        private LocalDB _db;
+        private const string WorkingDirPath = "/sigparser-api-files/fetch-contacts";
+        public FetchContacts(FetchContactsOptions options, IFormatter formatter, LocalDB db)
         {
             _options = options;
+            _formatter = formatter;
+            _db = db;
         }
 
         public async Task Fetch()
         {
+            var state = _db.LoadState();
+            
             var restClient = new RestClient("https://ipaas.sigparser.com");
             var apiKey = _options.ApiKey ?? Environment.GetEnvironmentVariable("SigParserApiKey");
             restClient.AddDefaultHeader("x-api-key", apiKey);
-            var restRequest = new RestRequest("/api/Contacts/List", Method.POST);
-            restRequest.AddJsonBody(new { take = 100, orderbyasc = true, lastmodified_after = "2000-11-20T17:32:59+00:00" });
-            
-            var response = await restClient.ExecuteAsync(restRequest);
-            var doc = JsonDocument.Parse(response.Content);
-       
-            var lastModified = "";
-            foreach (var element in doc.RootElement.EnumerateArray())
+
+            while (true)
             {
-                lastModified = element.GetProperty("lastmodified").ToString();
-                var email = element.GetProperty("emailaddress").ToString();
-                var hash = GetHash(email);    
+                var restRequest = new RestRequest("/api/Contacts/List", Method.POST);
+                restRequest.AddJsonBody(new { take = 100, orderbyasc = true, lastmodified_after = state.ContactsLastModified ?? "2000-11-20T17:32:59+00:00" });
+            
+                var response = await restClient.ExecuteAsync(restRequest);
+                if (!response.IsSuccessful) throw new Exception($"Error: {response.StatusCode} {response.Content}");
+                
+                var doc = JsonDocument.Parse(response.Content);
+                Console.WriteLine($"fetched {doc.RootElement.GetArrayLength()} contacts {state.ContactsLastModified}");
+                
+                var lastModified = "";
+                foreach (var element in doc.RootElement.EnumerateArray())
+                {
+                    lastModified = element.GetProperty("lastmodified").ToString();
+                    var email = element.GetProperty("emailaddress").ToString();
+                    var hash = GetHash(email);
 
-                WriteToFile(element.ToString(), hash + ".json");
+                    WriteToFile(element.ToString(), hash + ".json");
+                }
+            
+                state.ContactsLastModified = lastModified;
+                _db.SaveState(state);
+
+                if (doc.RootElement.GetArrayLength() < 100) break;
             }
-
-            WriteToFile(lastModified,"config.txt");
-            JoinFiles();
+            await _formatter.GenerateFile(workingDirectory: WorkingDirPath, outputFile: _options.Output);
         }
         
         private static string GetHash(string text)
@@ -65,31 +86,12 @@ namespace SigParserApi.Verbs
 
         private async void WriteToFile(string contents, string fileName)
         {
-            string docPath = Directory.GetCurrentDirectory() + "/temp";
+            string docPath = Directory.GetCurrentDirectory() + WorkingDirPath;
             Directory.CreateDirectory(docPath);
             
             using (StreamWriter outputFile = new StreamWriter(Path.Combine(docPath, fileName)))
             {
                 await outputFile.WriteAsync(contents);
-            }
-        }
-
-        private async void JoinFiles()
-        {
-            string docPath = Directory.GetCurrentDirectory() + "/temp";
-            string[] inputFilePaths = Directory.GetFiles(docPath, "*.json");
-            string outputFile = _options.Output;
-            
-            using (var outputStream = File.Create(outputFile))
-            {
-                foreach (var inputFilePath in inputFilePaths)
-                {
-                    using (var inputStream = File.OpenRead(inputFilePath))
-                    {
-                        inputStream.CopyTo(outputStream);
-                    }
-                    Console.WriteLine("The file {0} has been processed.", inputFilePath);
-                }
             }
         }
     }
