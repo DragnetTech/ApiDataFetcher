@@ -5,7 +5,7 @@ namespace SigParserApi
 {
     public class LocalDB
     {
-        public const string StateFile = "state.json";
+        private const string StateFile = "state.json";
 
         public State LoadState()
         {

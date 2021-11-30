@@ -2,7 +2,6 @@
 using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
-using System.Security.Cryptography;
 using CommandLine;
 using RestSharp;
 using SigParserApi.Formatters;
@@ -11,22 +10,22 @@ namespace SigParserApi.Verbs
 {
     [Verb("fetch-contacts", HelpText = "Fetches contacts from the sigparser api.")]
     public class FetchContactsOptions
-    {   
-        [Option("output", Required = true, HelpText = "This is the name of the output file.")]
-        public string Output { get; set; }
+    {
+        [Option("output", Required = true, HelpText = "The name of the output file. Make sure to add the file type, likely .json.")]
+        public string Output { get; set; } = "contacts.json";
         
-        [Option("apikey", Required = false)]
+        [Option("apikey", Required = false, HelpText = "Optional: SigParser API key.")]
         public string? ApiKey { get; set; }
 
-        [Option("formatter", Required = false, Default = "jsonArray", HelpText = "Configure the output format. Options: jsonArray, jsonLines")]
+        [Option("formatter", Required = false, Default = "jsonArray", HelpText = "Optional: Configure the output format. Options: jsonArray, jsonLines. Default: jsonArray.")]
         public string Formatter { get; set; } = "jsonArray";
     }
 
     public class FetchContacts
     {
-        private FetchContactsOptions _options;
-        private IFormatter _formatter;
-        private LocalDB _db;
+        private readonly FetchContactsOptions _options;
+        private readonly IFormatter _formatter;
+        private readonly LocalDB _db;
         private const string WorkingDirPath = "/sigparser-api-files/fetch-contacts";
         public FetchContacts(FetchContactsOptions options, IFormatter formatter, LocalDB db)
         {
@@ -38,7 +37,6 @@ namespace SigParserApi.Verbs
         public async Task Fetch()
         {
             var state = _db.LoadState();
-            
             var restClient = new RestClient("https://ipaas.sigparser.com");
             var apiKey = _options.ApiKey ?? Environment.GetEnvironmentVariable("SigParserApiKey");
             restClient.AddDefaultHeader("x-api-key", apiKey);
@@ -46,15 +44,14 @@ namespace SigParserApi.Verbs
             while (true)
             {
                 var restRequest = new RestRequest("/api/Contacts/List", Method.POST);
-                restRequest.AddJsonBody(new { take = 100, orderbyasc = true, lastmodified_after = state.ContactsLastModified ?? "2000-11-20T17:32:59+00:00" });
+                restRequest.AddJsonBody(new { take = 100, orderbyasc = true, lastmodified_after = state.ContactsLastModified });
             
                 var response = await restClient.ExecuteAsync(restRequest);
                 if (!response.IsSuccessful) throw new Exception($"Error: {response.StatusCode} {response.Content}");
-                
+
                 var doc = JsonDocument.Parse(response.Content);
-                Console.WriteLine($"fetched {doc.RootElement.GetArrayLength()} contacts {state.ContactsLastModified}");
-                
                 var lastModified = "";
+                
                 foreach (var element in doc.RootElement.EnumerateArray())
                 {
                     lastModified = element.GetProperty("lastmodified").ToString();
@@ -66,7 +63,8 @@ namespace SigParserApi.Verbs
             
                 state.ContactsLastModified = lastModified;
                 _db.SaveState(state);
-
+    
+                Console.WriteLine($"fetched {doc.RootElement.GetArrayLength()} contacts {state.ContactsLastModified}");
                 if (doc.RootElement.GetArrayLength() < 100) break;
             }
             await _formatter.GenerateFile(workingDirectory: WorkingDirPath, outputFile: _options.Output);
@@ -76,23 +74,19 @@ namespace SigParserApi.Verbs
         {
             if (String.IsNullOrEmpty(text)) return String.Empty;
 
-            using (var sha = new System.Security.Cryptography.SHA256Managed())
-            {
-                byte[] textData = System.Text.Encoding.UTF8.GetBytes(text);
-                byte[] hash = sha.ComputeHash(textData);
-                return BitConverter.ToString(hash).Replace("-", String.Empty);
-            }
+            using var sha = new System.Security.Cryptography.SHA256Managed();
+            byte[] textData = System.Text.Encoding.UTF8.GetBytes(text);
+            byte[] hash = sha.ComputeHash(textData);
+            return BitConverter.ToString(hash).Replace("-", String.Empty);
         }
 
         private async void WriteToFile(string contents, string fileName)
         {
             string docPath = Directory.GetCurrentDirectory() + WorkingDirPath;
             Directory.CreateDirectory(docPath);
-            
-            using (StreamWriter outputFile = new StreamWriter(Path.Combine(docPath, fileName)))
-            {
-                await outputFile.WriteAsync(contents);
-            }
+
+            await using StreamWriter outputFile = new StreamWriter(Path.Combine(docPath, fileName));
+            await outputFile.WriteAsync(contents);
         }
     }
 }
