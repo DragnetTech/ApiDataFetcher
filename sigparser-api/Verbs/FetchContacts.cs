@@ -11,13 +11,13 @@ namespace SigParserApi.Verbs
     [Verb("fetch-contacts", HelpText = "Fetches contacts from the sigparser api.")]
     public class FetchContactsOptions
     {
-        [Option("output", Required = true, HelpText = "The name of the output file. Make sure to add the file type, likely .json.")]
+        [Option('o', "output", Required = true, HelpText = "The name of the output file. Make sure to add the file type, likely .json.")]
         public string Output { get; set; } = "contacts.json";
         
-        [Option("apikey", Required = false, HelpText = "Optional: SigParser API key.")]
+        [Option('a',"apikey", Required = false, HelpText = "Optional. SigParser API key.")]
         public string? ApiKey { get; set; }
 
-        [Option("formatter", Required = false, Default = "jsonArray", HelpText = "Optional: Configure the output format. Options: jsonArray, jsonLines. Default: jsonArray.")]
+        [Option('f',"formatter", Required = false, Default = "jsonArray", HelpText = "Optional. Configure the output format. Options: [jsonArray, jsonLines]")]
         public string Formatter { get; set; } = "jsonArray";
     }
 
