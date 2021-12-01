@@ -1,13 +1,13 @@
 name: Publish
       
 on:
-  workflow_dispatch: 
   push:
     tags:
       - "v*.*.*"
   pull_request:
     tags:
       - "v*.*.*"
+  workflow_dispatch: 
 
 jobs:
   build:
