@@ -8,7 +8,7 @@ using SigParserApi.Formatters;
 
 namespace SigParserApi.Verbs
 {
-    [Verb("fetch-contacts", HelpText = "Fetches contacts from the sigparser api.")]
+    [Verb("fetch-contacts", HelpText = "Fetches contacts and builds one giant file with all contact details. May run slow on first execution, but with mostly cached results on the next run.")]
     public class FetchContactsOptions
     {
         [Option('o', "output", Required = true, HelpText = "The name of the output file. Make sure to add the file type, likely .json.")]
@@ -37,6 +37,7 @@ namespace SigParserApi.Verbs
         public async Task Fetch()
         {
             var state = _db.LoadState();
+            var fileCount = 0;
             var restClient = new RestClient("https://ipaas.sigparser.com");
             var apiKey = _options.ApiKey ?? Environment.GetEnvironmentVariable("SigParserApiKey");
             restClient.AddDefaultHeader("x-api-key", apiKey);
@@ -44,7 +45,7 @@ namespace SigParserApi.Verbs
             while (true)
             {
                 var restRequest = new RestRequest("/api/Contacts/List", Method.POST);
-                restRequest.AddJsonBody(new { take = 100, orderbyasc = true, lastmodified_after = state.ContactsLastModified });
+                restRequest.AddJsonBody(new { take = 100, orderbyasc = true, lastmodified_after = state.ContactsLastModified ?? "1950-01-01T01:00:00+00:00" });
             
                 var response = await restClient.ExecuteAsync(restRequest);
                 if (!response.IsSuccessful) throw new Exception($"Error: {response.StatusCode} {response.Content}");
@@ -63,11 +64,14 @@ namespace SigParserApi.Verbs
             
                 state.ContactsLastModified = lastModified;
                 _db.SaveState(state);
-    
-                Console.WriteLine($"fetched {doc.RootElement.GetArrayLength()} contacts {state.ContactsLastModified}");
+
+                fileCount += doc.RootElement.GetArrayLength();
+                Console.WriteLine($"Fetched {fileCount} contacts.");
                 if (doc.RootElement.GetArrayLength() < 100) break;
             }
+            
             await _formatter.GenerateFile(workingDirectory: WorkingDirPath, outputFile: _options.Output);
+            Console.WriteLine("Finished processing files.");
         }
         
         private static string GetHash(string text)

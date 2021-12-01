@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -13,9 +14,16 @@ namespace SigParserApi.Formatters
 
             await using var outputStream = File.Create(outputFile);
             outputStream.Write(Encoding.UTF8.GetBytes("["));
-            
+
+            int i = 0;
             foreach (var inputFilePath in inputFilePaths)
             {
+                i++;
+                if (i % 100 == 0)
+                {
+                    Console.WriteLine($"Appended {i} records to {outputFile}.");
+                }
+
                 await using var inputStream = File.OpenRead(inputFilePath);
                 await inputStream.CopyToAsync(outputStream);
                 outputStream.Write(Encoding.UTF8.GetBytes(","));
