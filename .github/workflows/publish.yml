@@ -20,11 +20,17 @@ jobs:
         dotnet-version: 5.0.x
     - name: Restore Dependencies
       run: dotnet restore
-    - name: Publish
-      run: dotnet publish ./sigparser-api/sigparser-api.csproj --self-contained true --output ./build --runtime win-x64 --runtime linux-x64
-    - name: Zip
-      run: zip -r build.zip ./build
+    - name: Publish Windows
+      run: dotnet publish ./sigparser-api/sigparser-api.csproj --self-contained true --output ./build-windows --runtime win-x64
+    - name: Publish Linux
+      run: dotnet publish ./sigparser-api/sigparser-api.csproj --self-contained true --output ./build-linux --runtime linux-x64
+    - name: Zip Windows
+      run: zip -r build-windows.zip ./build-windows
+    - name: Zip Linux
+      run: zip -r build-linux.zip ./build-linux
     - name: Release
       uses: softprops/action-gh-release@v1
       with:
-        files: build.zip
+        files: | 
+            build-windows.zip
+            build-linux.zip
