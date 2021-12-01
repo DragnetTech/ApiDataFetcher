@@ -25,12 +25,12 @@ jobs:
     - name: Publish Linux
       run: dotnet publish ./sigparser-api/sigparser-api.csproj --self-contained true --output ./build-linux --runtime linux-x64
     - name: Zip Windows
-      run: zip -r build-windows.zip ./build-windows
+      run: zip -r sigparser-api-win64.zip ./build-windows/*
     - name: Zip Linux
-      run: zip -r build-linux.zip ./build-linux
+      run: zip -r sigparser-api-linux.zip ./build-linux/*
     - name: Release
       uses: softprops/action-gh-release@v1
       with:
         files: | 
-            build-windows.zip
-            build-linux.zip
+            sigparser-api-win64.zip
+            sigparser-api-linux.zip
