@@ -19,6 +19,16 @@ namespace SigParserApi.Verbs
 
         [Option('f',"formatter", Required = false, Default = "jsonArray", HelpText = "Optional. Configure the output format. Options: [jsonArray, jsonLines]")]
         public string Formatter { get; set; } = "jsonArray";
+
+        [Option('m', "expand-relationship-metrics", Required = false, Default = false, HelpText = @"Include the relationship_metrics array on each contact in the response.
+            This can add a lot of size to the response payload so it is suggested you not include it when you don't need it.")]
+        public bool ExpandRelationshipMetrics { get; set; }
+        
+        [Option('h', "expand-relationship-metrics-history", Required = false, Default = false, HelpText = "Expand the history within the relationship metrics. This may expand the response size of the request considerably.")]
+        public bool ExpandRelationshipMetricsHistory { get; set; }
+        
+        [Option('t', "expand-relationship-metrics-type", Required = false, HelpText = "Which contacts should be in the 'relationship_metrics' field. Options: [INTERNAL, EXTERNAL, ALL]")]
+        public string? ExpandRelationshipMetricsType { get; set; }
     }
 
     public class FetchContacts
@@ -45,7 +55,15 @@ namespace SigParserApi.Verbs
             while (true)
             {
                 var restRequest = new RestRequest("/api/Contacts/List", Method.POST);
-                restRequest.AddJsonBody(new { take = 100, orderbyasc = true, lastmodified_after = state.ContactsLastModified ?? "1950-01-01T01:00:00+00:00" });
+                restRequest.AddJsonBody(new
+                {
+                    take = 100, 
+                    orderbyasc = true, 
+                    lastmodified_after = state.ContactsLastModified ?? "1950-01-01T01:00:00+00:00",
+                    expand_relationship_metrics = _options.ExpandRelationshipMetrics,
+                    expand_relationship_metrics_history = _options.ExpandRelationshipMetricsHistory,
+                    expand_relationship_metrics_type = _options.ExpandRelationshipMetricsType
+                });
             
                 var response = await restClient.ExecuteAsync(restRequest);
                 if (!response.IsSuccessful) throw new Exception($"Error: {response.StatusCode} {response.Content}");
