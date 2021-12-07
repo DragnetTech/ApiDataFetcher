@@ -25,7 +25,7 @@ jobs:
     - name: Publish Linux
       run: dotnet publish ./sigparser-api/sigparser-api.csproj --self-contained true --output ./build-linux --runtime linux-x64
     - name: Zip Windows
-      run: zip -r sigparser-api-win64.zip build-windows/*
+      run: cd build-windows && zip -r ../sigparser-api-win64.zip *
     - name: Zip Linux
       run: zip -r sigparser-api-linux.zip build-linux/*
     - name: Release
