@@ -27,7 +27,7 @@ jobs:
     - name: Zip Windows
       run: cd build-windows && zip -r ../sigparser-api-win64.zip *
     - name: Zip Linux
-      run: zip -r sigparser-api-linux.zip build-linux/*
+      run: cd build-linux && zip -r ../sigparser-api-linux.zip *
     - name: Release
       uses: softprops/action-gh-release@v1
       with:
