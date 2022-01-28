@@ -18,6 +18,11 @@ namespace SigParserApi.Formatters
             int i = 0;
             foreach (var inputFilePath in inputFilePaths)
             {
+                if (i > 0)
+                {
+                    outputStream.Write(Encoding.UTF8.GetBytes(","));
+                }
+                
                 i++;
                 if (i % 100 == 0)
                 {
@@ -26,7 +31,7 @@ namespace SigParserApi.Formatters
 
                 await using var inputStream = File.OpenRead(inputFilePath);
                 await inputStream.CopyToAsync(outputStream);
-                outputStream.Write(Encoding.UTF8.GetBytes(","));
+                
             }
             
             outputStream.Write(Encoding.UTF8.GetBytes("]"));
