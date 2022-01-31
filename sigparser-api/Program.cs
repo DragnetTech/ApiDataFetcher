@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 using CommandLine;
 using SigParserApi.Formatters;
 using SigParserApi.Verbs;
@@ -9,6 +10,8 @@ namespace SigParserApi
     {
         static int Main(string[] args)
         {
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            
             return Parser.Default.ParseArguments<FetchContactsOptions, FetchCompaniesOptions>(args)
                 .MapResult((FetchContactsOptions o) =>
                 {

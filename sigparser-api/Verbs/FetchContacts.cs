@@ -1,5 +1,7 @@
 ﻿using System;
+using System.ComponentModel.Design.Serialization;
 using System.IO;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using CommandLine;
@@ -29,6 +31,9 @@ namespace SigParserApi.Verbs
         
         [Option('t', "expand-relationship-metrics-type", Required = false, HelpText = "Which contacts should be in the 'relationship_metrics' field. Options: [INTERNAL, EXTERNAL, ALL]")]
         public string? ExpandRelationshipMetricsType { get; set; }
+
+        [Option("codepage", Required = false, HelpText = "The encoding code page of the final output file. This is always a number. If not set then UTF-8 is the default. This must be a number. This was introduced to help with importing into SQL Server using OPENROWSET. Example: 1252")]
+        public int? CodePageEncoding { get; set; }
     }
 
     public class FetchContacts
@@ -88,7 +93,13 @@ namespace SigParserApi.Verbs
                 if (doc.RootElement.GetArrayLength() < 100) break;
             }
             
-            await _formatter.GenerateFile(workingDirectory: WorkingDirPath, outputFile: _options.Output);
+            Encoding encoding = Encoding.UTF8;
+            if (_options.CodePageEncoding != null)
+            {
+                encoding = Encoding.GetEncoding(_options.CodePageEncoding.Value);
+            }
+            
+            await _formatter.GenerateFile(workingDirectory: WorkingDirPath, outputFile: _options.Output, encoding: encoding);
             Console.WriteLine("Finished processing files.");
         }
         

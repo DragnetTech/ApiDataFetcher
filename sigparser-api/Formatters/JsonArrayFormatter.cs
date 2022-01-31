@@ -7,20 +7,20 @@ namespace SigParserApi.Formatters
 {
     public class JsonArrayFormatter : IFormatter
     {
-        public async Task GenerateFile(string workingDirectory, string outputFile)
+        public async Task GenerateFile(string workingDirectory, string outputFile, Encoding encoding)
         {
             string docPath = Directory.GetCurrentDirectory() + workingDirectory;
             string[] inputFilePaths = Directory.GetFiles(docPath, "*.json");
 
             await using var outputStream = File.Create(outputFile);
-            outputStream.Write(Encoding.UTF8.GetBytes("["));
+            outputStream.Write(encoding.GetBytes("["));
 
             int i = 0;
             foreach (var inputFilePath in inputFilePaths)
             {
                 if (i > 0)
                 {
-                    outputStream.Write(Encoding.UTF8.GetBytes(","));
+                    outputStream.Write(encoding.GetBytes(","));
                 }
                 
                 i++;
@@ -29,12 +29,12 @@ namespace SigParserApi.Formatters
                     Console.WriteLine($"Appended {i} records to {outputFile}.");
                 }
 
-                await using var inputStream = File.OpenRead(inputFilePath);
-                await inputStream.CopyToAsync(outputStream);
-                
+                var fileContents = await File.ReadAllBytesAsync(inputFilePath);
+                var convertedBytes = Encoding.Convert(Encoding.UTF8, encoding, fileContents);
+                await outputStream.WriteAsync(convertedBytes);
             }
             
-            outputStream.Write(Encoding.UTF8.GetBytes("]"));
+            outputStream.Write(encoding.GetBytes("]"));
         }
     }
 }

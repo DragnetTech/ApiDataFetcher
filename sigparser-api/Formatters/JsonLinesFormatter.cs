@@ -6,7 +6,7 @@ namespace SigParserApi.Formatters
 {
     public class JsonLinesFormatter : IFormatter
     {
-        public async Task GenerateFile(string workingDirectory, string outputFile)
+        public async Task GenerateFile(string workingDirectory, string outputFile, Encoding encoding)
         {
             string docPath = Directory.GetCurrentDirectory() + workingDirectory;
             string[] inputFilePaths = Directory.GetFiles(docPath, "*.json");
