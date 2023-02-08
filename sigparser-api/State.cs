@@ -2,6 +2,6 @@
 {
     public class State
     {
-        public string? ContactsLastModified { get; set; } = "1950-01-01T01:00:00+00:00";
+        public string? ContactsLastModifiedV2 { get; set; } = "1950-01-01T01:00:00+00:00";
     }
 }

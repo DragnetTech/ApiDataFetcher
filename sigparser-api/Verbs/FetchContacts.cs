@@ -41,7 +41,7 @@ namespace SigParserApi.Verbs
         private readonly FetchContactsOptions _options;
         private readonly IFormatter _formatter;
         private readonly LocalDB _db;
-        private const string WorkingDirPath = "/sigparser-api-files/fetch-contacts";
+        private const string WorkingDirPath = "/sigparser-api-files/fetch-contactsV2";
         public FetchContacts(FetchContactsOptions options, IFormatter formatter, LocalDB db)
         {
             _options = options;
@@ -64,7 +64,7 @@ namespace SigParserApi.Verbs
                 {
                     take = 100, 
                     orderbyasc = true, 
-                    lastmodified_after = state.ContactsLastModified ?? "1950-01-01T01:00:00+00:00",
+                    lastmodified_after = state.ContactsLastModifiedV2 ?? "1950-01-01T01:00:00+00:00",
                     expand_relationship_metrics = _options.ExpandRelationshipMetrics,
                     expand_relationship_metrics_history = _options.ExpandRelationshipMetricsHistory,
                     expand_relationship_metrics_type = _options.ExpandRelationshipMetricsType
@@ -79,13 +79,12 @@ namespace SigParserApi.Verbs
                 foreach (var element in doc.RootElement.EnumerateArray())
                 {
                     lastModified = element.GetProperty("lastmodified").ToString();
-                    var email = element.GetProperty("emailaddress").ToString();
-                    var hash = GetHash(email);
+                    var internal_id = element.GetProperty("internal_id").ToString();
 
-                    WriteToFile(element.ToString(), hash + ".json");
+                    WriteToFile(element.ToString(), internal_id + ".json");
                 }
             
-                state.ContactsLastModified = lastModified;
+                state.ContactsLastModifiedV2 = lastModified;
                 _db.SaveState(state);
 
                 fileCount += doc.RootElement.GetArrayLength();
